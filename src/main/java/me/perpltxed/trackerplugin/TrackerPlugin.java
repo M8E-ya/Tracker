@@ -10,16 +10,10 @@ public class TrackerPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        //check if tracker is enabled
         if (getConfig().getBoolean("tracker-enabled")) {
-            tracker.loadStats();
-        }
-    }
-
-    @Override
-    public void onDisable() {
-        if (getConfig().getBoolean("tracker-enabled")) {
-            tracker.saveStats();
+            getServer().getPluginManager().registerEvents(tracker, this);
         }
     }
 }
+
+
