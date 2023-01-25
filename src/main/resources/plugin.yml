@@ -1,0 +1,4 @@
+name: Tracker
+version: '${project.version}'
+main: me.perpltxed.tracker.Tracker
+api-version: 1.19
