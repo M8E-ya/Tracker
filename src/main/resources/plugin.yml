@@ -2,3 +2,4 @@ name: TrackerPlugin
 version: '${project.version}'
 main: me.perpltxed.trackerplugin.TrackerPlugin
 api-version: 1.19
+softdepend: [SiegeWar]

@@ -3,16 +3,17 @@ package me.perpltxed.trackerplugin;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import org.bukkit.Material;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.ThrownPotion;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.entity.PotionSplashEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.PotionMeta;
-import org.bukkit.potion.Potion;
 
 import java.io.File;
 import java.io.FileReader;
@@ -23,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Tracker implements Listener {
-
     private File statsFile;
     private Gson gson;
     private Map<String, Map<String, Integer>> playerData;
@@ -34,7 +34,6 @@ public class Tracker implements Listener {
         playerData = new HashMap<>();
         loadStats();
     }
-
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         String playerName = event.getEntity().getName();
@@ -44,22 +43,31 @@ public class Tracker implements Listener {
             writeToJson(killer.getName(), "kills", 1);
         }
     }
-
     @EventHandler
     public void onPlayerItemConsume(PlayerItemConsumeEvent event) {
         String playerName = event.getPlayer().getName();
         ItemStack item = event.getItem();
-        if (item.getType() == Material.POTION || item.getType() == Material.SPLASH_POTION) {
-            Potion potion = Potion.fromItemStack(item);
-            if (potion != null) {
-                writeToJson(playerName, "potions", 1);
-            }
-        } else if (item.getType().isEdible()) {
+        if (item.getType().isEdible()) {
             writeToJson(playerName, "food", 1);
         }
     }
-
-
+    @EventHandler
+    public void onPotionSplash(PotionSplashEvent event) {
+        ThrownPotion potion = event.getPotion();
+        if(potion.getShooter() instanceof Player){
+            Player player = (Player) potion.getShooter();
+            writeToJson(player.getName(), "splash_potions", 1);
+        }
+    }
+    @EventHandler
+    public void onProjectileLaunch(ProjectileLaunchEvent event) {
+        if (event.getEntity().getShooter() instanceof Player) {
+            Player player = (Player) event.getEntity().getShooter();
+            if (event.getEntityType() == EntityType.ARROW) {
+                writeToJson(player.getName(), "arrows_shot", 1);
+            }
+        }
+    }
     @EventHandler
     public void onPlayerTeleport(PlayerTeleportEvent event) {
         String playerName = event.getPlayer().getName();
@@ -67,7 +75,6 @@ public class Tracker implements Listener {
             writeToJson(playerName, "ender_pearls", 1);
         }
     }
-
     private void writeToJson(String playerName, String action, int value) {
         try {
             FileReader reader = new FileReader(statsFile);
@@ -90,7 +97,6 @@ public class Tracker implements Listener {
             e.printStackTrace();
         }
     }
-
     private void loadStats() {
         if (!statsFile.exists()) {
             try {
