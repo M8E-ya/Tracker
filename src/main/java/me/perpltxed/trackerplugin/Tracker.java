@@ -1,4 +1,4 @@
-package me.perpltxed.tracker;
+package me.perpltxed.trackerplugin;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -42,7 +42,7 @@ public class Tracker implements Listener {
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         String playerName = event.getEntity().getName();
-        if (event.getEntity().getKiller() != null) {
+        if (event.getEntity().getKiller() instanceof Player) {
             String killerName = event.getEntity().getKiller().getName();
             int kills = playerKills.getOrDefault(killerName, 0) + 1;
             playerKills.put(killerName, kills);

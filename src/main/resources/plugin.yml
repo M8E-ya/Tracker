@@ -1,4 +1,4 @@
-name: Tracker
+name: TrackerPlugin
 version: '${project.version}'
-main: me.perpltxed.tracker.Tracker
+main: me.perpltxed.trackerplugin.TrackerPlugin
 api-version: 1.19

@@ -1,10 +1,10 @@
-package me.perpltxed.tracker;
+package me.perpltxed.trackerplugin;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 
-public final class TrackerPlugin extends JavaPlugin {
+public class TrackerPlugin extends JavaPlugin {
     Tracker tracker = new Tracker(new File("plugins/TrackerPlugin"));
 
     @Override
