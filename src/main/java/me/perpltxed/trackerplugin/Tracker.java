@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.ThrownPotion;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
@@ -22,18 +23,25 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class Tracker implements Listener {
-    private File statsFile;
-    private Gson gson;
+    private final File statsFile;
+    private final Gson gson;
     private Map<String, Map<String, Integer>> playerData;
+
+    private final Map<UUID, Double> damageDealt;
+    private final Map<UUID, Double> damageReceived;
 
     public Tracker(File dataFolder) {
         statsFile = new File(dataFolder, "stats.json");
         gson = new GsonBuilder().setPrettyPrinting().create();
         playerData = new HashMap<>();
+        damageDealt = new HashMap<>();
+        damageReceived = new HashMap<>();
         loadStats();
     }
+
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         String playerName = event.getEntity().getName();
@@ -43,6 +51,7 @@ public class Tracker implements Listener {
             writeToJson(killer.getName(), "kills", 1);
         }
     }
+
     @EventHandler
     public void onPlayerItemConsume(PlayerItemConsumeEvent event) {
         String playerName = event.getPlayer().getName();
@@ -51,14 +60,16 @@ public class Tracker implements Listener {
             writeToJson(playerName, "food", 1);
         }
     }
+
     @EventHandler
     public void onPotionSplash(PotionSplashEvent event) {
         ThrownPotion potion = event.getPotion();
-        if(potion.getShooter() instanceof Player){
+        if (potion.getShooter() instanceof Player) {
             Player player = (Player) potion.getShooter();
             writeToJson(player.getName(), "splash_potions", 1);
         }
     }
+
     @EventHandler
     public void onProjectileLaunch(ProjectileLaunchEvent event) {
         if (event.getEntity().getShooter() instanceof Player) {
@@ -68,6 +79,7 @@ public class Tracker implements Listener {
             }
         }
     }
+
     @EventHandler
     public void onPlayerTeleport(PlayerTeleportEvent event) {
         String playerName = event.getPlayer().getName();
@@ -75,7 +87,27 @@ public class Tracker implements Listener {
             writeToJson(playerName, "ender_pearls", 1);
         }
     }
-    private void writeToJson(String playerName, String action, int value) {
+
+    @EventHandler
+    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof Player && event.getEntity() instanceof Player) {
+            Player damager = (Player) event.getDamager();
+            Player damaged = (Player) event.getEntity();
+            double damage = event.getDamage();
+
+            // Update cumulative damage dealt and received
+            UUID damagerUUID = damager.getUniqueId();
+            UUID damagedUUID = damaged.getUniqueId();
+            damageDealt.put(damagerUUID, damageDealt.getOrDefault(damagerUUID, 0.0) + damage);
+            damageReceived.put(damagedUUID, damageReceived.getOrDefault(damagedUUID, 0.0) + damage);
+
+            // Update the stats file
+            writeToJson(damager.getName(), "damage_dealt", damage);
+            writeToJson(damaged.getName(), "damage_received", damage);
+        }
+    }
+
+    private void writeToJson(String playerName, String action, double value) {
         try {
             FileReader reader = new FileReader(statsFile);
             Type type = new TypeToken<Map<String, Map<String, Integer>>>(){}.getType();
@@ -84,10 +116,12 @@ public class Tracker implements Listener {
         } catch (IOException e) {
             playerData = new HashMap<>();
         }
+
         Map<String, Integer> playerActions = playerData.getOrDefault(playerName, new HashMap<>());
         int currentValue = playerActions.getOrDefault(action, 0);
-        playerActions.put(action, currentValue + value);
+        playerActions.put(action, (int)(currentValue + value));
         playerData.put(playerName, playerActions);
+
         try {
             FileWriter writer = new FileWriter(statsFile);
             gson.toJson(playerData, writer);
@@ -97,6 +131,7 @@ public class Tracker implements Listener {
             e.printStackTrace();
         }
     }
+
     private void loadStats() {
         if (!statsFile.exists()) {
             try {
@@ -107,4 +142,3 @@ public class Tracker implements Listener {
         }
     }
 }
-
